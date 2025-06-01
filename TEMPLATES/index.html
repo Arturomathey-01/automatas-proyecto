@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mini IDE </title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        h2, h3 {
+            color: #333;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        
+        .tab-container {
+            margin-bottom: 20px;
+        }
+        
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #eee;
+            margin-bottom: 20px;
+        }
+        
+        .tab {
+            padding: 12px 20px;
+            cursor: pointer;
+            background: #f5f5f5;
+            border: none;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+        
+        .tab.active {
+            background: #667eea;
+            color: white;
+            border-bottom-color: #764ba2;
+        }
+        
+        .tab:hover:not(.active) {
+            background: #e0e0e0;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        #codeContainer {
+            position: relative;
+            margin-bottom: 15px;
+        }
+        
+        #codeInput {
+            width: 100%;
+            height: 200px;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: vertical;
+            transition: border-color 0.3s ease;
+        }
+        
+        #codeInput:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 10px rgba(102, 126, 234, 0.3);
+        }
+        
+        #highlightLayer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            padding: 15px;
+            box-sizing: border-box;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            overflow: hidden;
+            border-radius: 8px;
+        }
+        
+        .error-word {
+            background-color: rgba(255, 0, 0, 0.2);
+            border-bottom: 2px solid red;
+            display: inline-block;
+            border-radius: 3px;
+        }
+        
+        .button-container {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        #output {
+            border: 2px solid #ddd;
+            padding: 20px;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+            min-height: 150px;
+            font-family: monospace;
+        }
+        
+        .syntax-error {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        
+        .syntax-valid {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        
+        .result {
+            background: linear-gradient(45deg, #2ecc71, #27ae60);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3);
+        }
+        
+        .turing-container {
+            margin-top: 20px;
+        }
+        
+        .turing-tape {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .tape-cell {
+            width: 40px;
+            height: 40px;
+            border: 2px solid #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 16px;
+            background: white;
+        }
+        
+        .tape-cell.current {
+            background: #667eea;
+            color: white;
+            box-shadow: 0 0 10px rgba(102, 126, 234, 0.5);
+        }
+        
+        .turing-state {
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            margin: 20px 0;
+            padding: 10px;
+            background: linear-gradient(45deg, #f39c12, #e67e22);
+            color: white;
+            border-radius: 8px;
+        }
+        
+        .turing-controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        
+        .grammar-rules {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            margin: 15px 0;
+        }
+        
+        .token-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin: 15px 0;
+        }
+        
+        .token-item {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 6px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1> MI Mini IDE </h1>
+        
+        <div class="tab-container">
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('compiler')">💻 Compilador</button>
+                <button class="tab" onclick="switchTab('turing')">🔧 Máquina de Turing</button>
+            </div>
+            
+            <!-- Pestaña del Compilador -->
+            <div id="compiler" class="tab-content active">
+                <h2>Editor de Código</h2>
+                
+                <div id="codeContainer">
+                    <textarea id="codeInput" placeholder="Escribe tu código aquí...
+
+📝 Ejemplos de operaciones aritméticas:
+suma  5 y 3
+resta 10 y 4  
+mult 6 y 2
+div 8 y 2
+pot 2 y 3
+RAIZ 16
+"></textarea>
+                    <div id="highlightLayer"></div>
+                </div>
+                
+                <div class="button-container">
+                    <button id="lexicoBtn">🔍 Análisis Léxico</button>
+                    <button id="sintacticoBtn">📝 Análisis Sintáctico</button>
+                    <button id="ejecutarBtn">▶️ Ejecutar Código</button>
+                    <button onclick="clearOutput()">🗑️ Limpiar</button>
+                </div>
+                
+                <h3>Resultado:</h3>
+                <div id="output"></div>
+            </div>
+            
+            <!-- Pestaña de Máquina de Turing -->
+            <div id="turing" class="tab-content">
+                <h2>Máquina de Turing</h2>
+                
+                <div class="grammar-rules">
+                    <h4>🎯 Configuración de la Máquina:</h4>
+                    <p><strong>Alfabeto:</strong> {0, 1, B} (B = blanco)</p>
+                    <p><strong>Estados:</strong> {q0, q1, q2, qf} (qf = estado final)</p>
+                    <p><strong>Función:</strong> Reconocer cadenas con igual número de 0s y 1s</p>
+                </div>
+                
+                <div style="margin: 20px 0;">
+                    <label for="turingInput"><strong>Cadena de entrada:</strong></label>
+                    <input type="text" id="turingInput" placeholder="Ej: 0011, 1010, 01" 
+                           style="width: 200px; padding: 8px; margin-left: 10px; border: 2px solid #ddd; border-radius: 4px;">
+                    <button onclick="initializeTuring()" style="margin-left: 10px;">🔄 Inicializar</button>
+                </div>
+                
+                <div class="turing-state" id="turingState">
+                    Estado: Inicializar máquina
+                </div>
+                
+                <div class="turing-tape" id="turingTape">
+                    <!-- La cinta se generará dinámicamente -->
+                </div>
+                
+                <div class="turing-controls">
+                    <button onclick="stepTuring()">➡️ Paso</button>
+                    <button onclick="runTuring()">▶️ Ejecutar</button>
+                    <button onclick="resetTuring()">🔄 Reiniciar</button>
+                </div>
+                
+                <div id="turingOutput" style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                    <h4>📊 Información de la Máquina:</h4>
+                    <p>La máquina de Turing simulada reconoce cadenas binarias con igual número de 0s y 1s.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Variables globales para la máquina de Turing
+        let turingMachine = {
+            tape: [],
+            head: 0,
+            state: 'q0',
+            running: false,
+            accepted: false
+        };
+        
+        // Diccionarios del compilador
+        const operaciones = {
+            "suma":  "suma",
+            "resta": "resta", 
+            "mult": "multiplicacion", 
+            "div": "division", 
+            "pot": "potencia",
+            "raiz": "raiz", 
+        };
+        
+        const palabrasAuxiliares = {
+            "y": "operador",
+           
+
+        };
+        
+        // Funciones para cambiar pestañas
+        function switchTab(tabName) {
+            // Ocultar todas las pestañas
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Mostrar la pestaña seleccionada
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+        
+        // Función para limpiar la salida
+        function clearOutput() {
+            document.getElementById('output').innerHTML = '';
+        }
+        
+        // Función para resaltar palabras desconocidas
+        function highlightUnknownWords() {
+            const code = document.getElementById('codeInput').value;
+            const highlightLayer = document.getElementById('highlightLayer');
+            
+            if (!code.trim()) {
+                highlightLayer.innerHTML = "";
+                return;
+            }
+            
+            const lines = code.split('\n');
+            let highlightedCode = '';
+            
+            for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+                const line = lines[lineIndex];
+                const words = line.split(/\s+/);
+                
+                for (let i = 0; i < words.length; i++) {
+                    const word = words[i];
+                    if (word.trim() !== '') {
+                        const isKnownOperator = operaciones[word.toLowerCase()];
+                        const isAuxiliar = palabrasAuxiliares[word.toLowerCase()];
+                        const isNumber = !isNaN(word) && !isNaN(parseFloat(word));
+                        
+                        if (!isKnownOperator && !isAuxiliar && !isNumber) {
+                            highlightedCode += `<span class="error-word">${word}</span>`;
+                        } else {
+                            highlightedCode += ' '.repeat(word.length);
+                        }
+                        
+                        if (i < words.length - 1) {
+                            highlightedCode += ' ';
+                        }
+                    }
+                }
+                
+                if (lineIndex < lines.length - 1) {
+                    highlightedCode += '\n';
+                }
+            }
+            
+            highlightLayer.innerHTML = highlightedCode;
+        }
+        
+        // Análisis léxico mejorado
+        function realizarAnalisisLexico() {
+            const code = document.getElementById('codeInput').value;
+            const output = document.getElementById('output');
+            
+            if (!code.trim()) {
+                output.innerHTML = "<p>Por favor, introduce algún código para analizar.</p>";
+                return;
+            }
+            
+            const tokens = [];
+            const words = code.toLowerCase().split(/\s+/);
+            
+            for (const word of words) {
+                if (word.trim() === '') continue;
+                
+                if (operaciones[word]) {
+                    tokens.push({ tipo: operaciones[word], valor: word, valido: true });
+                } else if (palabrasAuxiliares[word]) {
+                    tokens.push({ tipo: palabrasAuxiliares[word], valor : word, valido: true });
+                } else if (!isNaN(word) && !isNaN(parseFloat(word))) {
+                    tokens.push({ tipo: 'NUM', valor: parseFloat(word), valido: true });
+                } else {
+                    tokens.push({ tipo: 'DESCONOCIDO', valor: word, valido: false });
+                }
+            }
+            
+            let resultHTML = "<h4>🔍 Tokens Encontrados:</h4>";
+            resultHTML += "<div class='token-list'>";
+            
+            for (const token of tokens) {
+                const statusClass = token.valido ? 'syntax-valid' : 'syntax-error';
+                const statusIcon = token.valido ? '✅' : '❌';
+                
+                resultHTML += `
+                    <div class='token-item'>
+                        <strong>${statusIcon} ${token.tipo}</strong><br>
+                        Valor: "${token.valor}"
+                        ${!token.valido ? '<br><span class="syntax-error">(Palabra desconocida)</span>' : ''}
+                    </div>
+                `;
+            }
+            
+            resultHTML += "</div>";
+            
+            // Estadísticas
+            const validTokens = tokens.filter(t => t.valido).length;
+            const invalidTokens = tokens.filter(t => !t.valido).length;
+            
+            resultHTML += `
+                <div class="grammar-rules">
+                    <h4>📊 Estadísticas:</h4>
+                    <p>✅ Tokens válidos: ${validTokens}</p>
+                    <p>❌ Tokens inválidos: ${invalidTokens}</p>
+                    <p>📝 Total de tokens: ${tokens.length}</p>
+                </div>
+            `;
+            
+            output.innerHTML = resultHTML;
+            output.classList.add('animate-fade-in');
+        }
+        
+        // Análisis sintáctico mejorado
+        function realizarAnalisisSintactico() {
+            const code = document.getElementById('codeInput').value.toLowerCase().trim();
+            const output = document.getElementById('output');
+            
+            if (!code) {
+                output.innerHTML = "<p>Por favor, introduce algún código para analizar.</p>";
+                return;
+            }
+            
+            const lines = code.split('\n').filter(line => line.trim() !== '');
+            let resultHTML = "<h4>📝 Análisis Sintáctico:</h4>";
+            let allValid = true;
+            
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                const lineNum = i + 1;
+                const analysis = analyzeSyntax(line);
+                
+                if (analysis.valid) {
+                    resultHTML += `<p class="syntax-valid">✅ Línea ${lineNum}: ${analysis.description}</p>`;
+                } else {
+                    resultHTML += `<p class="syntax-error">❌ Línea ${lineNum}: ${analysis.description}</p>`;
+                    allValid = false;
+                }
+            }
+            
+            
+            // Gramática soportada
+            resultHTML += `
+                <div class="grammar-rules">
+                    <h4>📚 Gramática Soportada:</h4>
+                    <ul>
+                        <li><strong>Operaciones:</strong> [operación] [número] y [número]</li>
+                        <li><strong>Raíz:</strong> raiz [número]</li>
+                    </ul>
+                </div>
+            `;
+            
+            output.innerHTML = resultHTML;
+            output.classList.add('animate-fade-in');
+        }
+        
+        // Función auxiliar para analizar sintaxis de una línea
+        function analyzeSyntax(line) {
+            const words = line.split(/\s+/);
+            
+            // Operaciones aritméticas binarias
+            if (words.length >= 4 && operaciones[words[0]] && words[0] !== 'raiz') {
+                if (!isNaN(words[1]) && words[2] === 'y' && !isNaN(words[3])) {
+                    return { valid: true, description: `Operación aritmética válida (${words[0]} ${words[1]} y ${words[3]})` };
+                }
+            }
+            
+            // Raíz cuadrada
+            if (words.length >= 2 && words[0] === 'raiz' && !isNaN(words[1])) {
+                return { valid: true, description: `Operación de raíz válida (raiz ${words[1]})` };
+            }
+            
+            // Asignaciones
+            if (words.length >= 4 && words[0] === 'asignar') {
+                if ((words[2] === 'valor' || (words[2] === 'igual' && words[3] === 'a')) && !isNaN(words[words.length - 1])) {
+                    return { valid: true, description: `Asignación válida (asignar ${words[1]} = ${words[words.length - 1]})` };
+                }
+            }
+            
+            // Condicionales
+            if (words.length >= 5 && words[0] === 'si' && words.includes('entonces')) {
+                return { valid: true, description: `Estructura condicional válida` };
+            }
+            
+            return { valid: false, description: `Estructura sintáctica no reconocida` };
+        }
+        
+
+  // Ejecución de código mejorada
+function ejecutarCodigo() {
+    const code = document.getElementById('codeInput').value.toLowerCase().trim();
+    const output = document.getElementById('output');
+    if (!code) {
+        output.innerHTML = "<p>Por favor, introduce algún código para ejecutar.</p>";
+        return;
+    }
+    const lines = code.split('\n').filter(line => line.trim() !== '');
+    let resultHTML = "<h4>▶️ Ejecución del Código:</h4>";
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        const lineNum = i + 1;
+        const result = executeLine(line);
+        resultHTML += `<div style="margin: 10px 0; padding: 10px; border-left: 4px solid ${result.success ? '#27ae60' : '#e74c3c'}; background: #f8f9fa;">`;
+        resultHTML += `<strong>Línea ${lineNum}:</strong> ${line}<br>`;
+        resultHTML += `<strong>Resultado:</strong> ${result.message}`;
+        if (result.value !== undefined) {
+            resultHTML += `<br><strong>💡 Valor: ${result.value}</strong>`;
+        }
+        resultHTML += `</div>`;
+    }
+    output.innerHTML = resultHTML;
+    output.classList.add('animate-fade-in');
+}
+
+// Función auxiliar para ejecutar una línea
+function executeLine(line) {
+    const words = line.split(/\s+/);
+    try {
+        // Operaciones aritméticas
+        if (operaciones[words[0]] && words[0] !== 'raiz') {
+            if (words.length >= 4 && !isNaN(words[1]) && words[2] === 'y' && !isNaN(words[3])) {
+                const a = parseFloat(words[1]);
+                const b = parseFloat(words[3]);
+                let result;
+                switch (operaciones[words[0]]) {
+                    case 'suma': result = a + b; break;
+                    case 'resta': result = a - b; break;
+                    case 'mult': result = a * b; break;
+                    case 'div':
+                        if (b === 0) return { success: false, message: "❌ Error: División por cero" };
+                        result = a / b;
+                        break;
+                    case 'pot': result = Math.pow(a, b); break;
+                }
+                return { success: true, message: `✅ Operación ${words[0]} ejecutada correctamente`, value: result };
+            }
+        }
+        
+        // Raíz cuadrada
+        if (words[0] === 'raiz' && words.length >= 2 && !isNaN(words[1])) {
+            const num = parseFloat(words[1]);
+            if (num < 0) return { success: false, message: "❌ Error: No se puede calcular la raíz de un número negativo" };
+            const result = Math.sqrt(num);
+            return { success: true, message: `✅ Raíz cuadrada calculada correctamente`, value: result };
+        }
+        
+        // Si no coincide con ningún patrón
+        return { success: false, message: `❌ Error: Comando no reconocido o sintaxis incorrecta` };
+        
+    } catch (error) {
+        return { success: false, message: `❌ Error: ${error.message}` };
+    }
+}
+        // === FUNCIONES DE LA MÁQUINA DE TURING ===
+        
+        function initializeTuring() {
+            const input = document.getElementById('turingInput').value.trim();
+            if (!input) {
+                alert('Por favor, introduce una cadena de entrada');
+                return;
+            }
+            
+            // Validar que solo contenga 0s y 1s
+            if (!/^[01]+$/.test(input)) {
+                alert('La cadena debe contener solo 0s y 1s');
+                return;
+            }
+            
+            // Inicializar la máquina
+            turingMachine = {
+                tape: ['B', ...input.split(''), 'B', 'B', 'B'],
+                head: 1,
+                state: 'q0',
+                running: false,
+                accepted: false,
+                steps: 0
+            };
+            
+            renderTuringTape();
+            updateTuringState();
+            
+            document.getElementById('turingOutput').innerHTML = `
+                <h4>📊 Máquina Inicializada:</h4>
+                <p><strong>Cadena de entrada:</strong> ${input}</p>
+                <p><strong>Longitud:</strong> ${input.length} símbolos</p>
+                <p><strong>Estado inicial:</strong> q0</p>
+                <p><strong>Posición del cabezal:</strong> ${turingMachine.head}</p>
+            `;
+        }
+        
+        function renderTuringTape() {
+            const tapeContainer = document.getElementById('turingTape');
+            tapeContainer.innerHTML = '';
+            
+            for (let i = 0; i < turingMachine.tape.length; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'tape-cell';
+                if (i === turingMachine.head) {
+                    cell.className += ' current';
+                }
+                cell.textContent = turingMachine.tape[i];
+                tapeContainer.appendChild(cell);
+            }
+        }
+        
+        function updateTuringState() {
+            const stateElement = document.getElementById('turingState');
+            let stateDescription = '';
+            
+            switch (turingMachine.state) {
+                case 'q0':
+                    stateDescription = 'Estado inicial - Buscando símbolos';
+                    break;
+                case 'q1':
+                    stateDescription = 'Procesando 0s - Buscando 1s correspondientes';
+                    break;
+                case 'q2':
+                    stateDescription = 'Procesando 1s - Buscando 0s correspondientes';
+                    break;
+                case 'qf':
+                    stateDescription = turingMachine.accepted ? '✅ Estado final - CADENA ACEPTADA' : '❌ Estado final - CADENA RECHAZADA';
+                    break;
+                default:
+                    stateDescription = 'Estado desconocido';
+            }
+            
+            stateElement.innerHTML = `Estado: ${turingMachine.state} - ${stateDescription}`;
+        }
+        
+        function stepTuring() {
+            if (turingMachine.state === 'qf') {
+                alert('La máquina ya ha terminado');
+                return;
+            }
+            
+            const currentSymbol = turingMachine.tape[turingMachine.head];
+            let nextState = turingMachine.state;
+            let writeSymbol = currentSymbol;
+            let moveDirection = 'R'; // R = Right, L = Left
+            
+            // Tabla de transiciones para reconocer cadenas con igual número de 0s y 1s
+            switch (turingMachine.state) {
+                case 'q0':
+                    if (currentSymbol === '0') {
+                        writeSymbol = 'X';
+                        nextState = 'q1';
+                        moveDirection = 'R';
+                    } else if (currentSymbol === '1') {
+                        writeSymbol = 'Y';
+                        nextState = 'q2';
+                        moveDirection = 'R';
+                    } else if (currentSymbol === 'B') {
+                        nextState = 'qf';
+                        turingMachine.accepted = true;
+                        moveDirection = 'R';
+                    }
+                    break;
+                    
+                case 'q1': // Buscando un 1 para emparejar con el 0 marcado
+                    if (currentSymbol === '0' || currentSymbol === 'Y') {
+                        moveDirection = 'R';
+                    } else if (currentSymbol === '1') {
+                        writeSymbol = 'Y';
+                        nextState = 'q0';
+                        moveDirection = 'L';
+                    } else if (currentSymbol === 'B') {
+                        nextState = 'qf';
+                        turingMachine.accepted = false;
+                        moveDirection = 'R';
+                    }
+                    break;
+                    
+                case 'q2': // Buscando un 0 para emparejar con el 1 marcado
+                    if (currentSymbol === '1' || currentSymbol === 'X') {
+                        moveDirection = 'R';
+                    } else if (currentSymbol === '0') {
+                        writeSymbol = 'X';
+                        nextState = 'q0';
+                        moveDirection = 'L';
+                    } else if (currentSymbol === 'B') {
+                        nextState = 'qf';
+                        turingMachine.accepted = false;
+                        moveDirection = 'R';
+                    }
+                    break;
+            }
+            
+            // Aplicar transición
+            turingMachine.tape[turingMachine.head] = writeSymbol;
+            turingMachine.state = nextState;
+            
+            // Mover cabezal
+            if (moveDirection === 'R') {
+                turingMachine.head++;
+                // Expandir cinta si es necesario
+                if (turingMachine.head >= turingMachine.tape.length) {
+                    turingMachine.tape.push('B');
+                }
+            } else if (moveDirection === 'L') {
+                turingMachine.head--;
+                // Expandir cinta hacia la izquierda si es necesario
+                if (turingMachine.head < 0) {
+                    turingMachine.tape.unshift('B');
+                    turingMachine.head = 0;
+                }
+            }
+            
+            turingMachine.steps++;
+            
+            // Actualizar visualización
+            renderTuringTape();
+            updateTuringState();
+            
+            // Actualizar información
+            const output = document.getElementById('turingOutput');
+            let statusHTML = `
+                <h4>📊 Estado de la Máquina:</h4>
+                <p><strong>Pasos ejecutados:</strong> ${turingMachine.steps}</p>
+                <p><strong>Estado actual:</strong> ${turingMachine.state}</p>
+                <p><strong>Símbolo leído:</strong> ${currentSymbol}</p>
+                <p><strong>Símbolo escrito:</strong> ${writeSymbol}</p>
+                <p><strong>Movimiento:</strong> ${moveDirection === 'R' ? 'Derecha' : 'Izquierda'}</p>
+                <p><strong>Posición del cabezal:</strong> ${turingMachine.head}</p>
+            `;
+            
+            if (turingMachine.state === 'qf') {
+                statusHTML += `
+                    <div class="result">
+                        <h4>🎯 Resultado Final:</h4>
+                        <p>${turingMachine.accepted ? '✅ La cadena es ACEPTADA' : '❌ La cadena es RECHAZADA'}</p>
+                        <p>La cadena ${turingMachine.accepted ? 'tiene' : 'NO tiene'} igual número de 0s y 1s</p>
+                    </div>
+                `;
+            }
+            
+            output.innerHTML = statusHTML;
+        }
+        
+        function runTuring() {
+            if (turingMachine.state === 'qf') {
+                alert('La máquina ya ha terminado');
+                return;
+            }
+            
+            turingMachine.running = true;
+            const maxSteps = 1000; // Prevenir bucles infinitos
+            
+            function runStep() {
+                if (turingMachine.state !== 'qf' && turingMachine.steps < maxSteps) {
+                    stepTuring();
+                    if (turingMachine.running) {
+                        setTimeout(runStep, 500); // Pausa de 500ms entre pasos
+                    }
+                } else {
+                    turingMachine.running = false;
+                    if (turingMachine.steps >= maxSteps) {
+                        alert('Se alcanzó el límite máximo de pasos. La ejecución se detuvo.');
+                    }
+                }
+            }
+            
+            runStep();
+        }
+        
+        function resetTuring() {
+            turingMachine = {
+                tape: ['B'],
+                head: 0,
+                state: 'q0',
+                running: false,
+                accepted: false,
+                steps: 0
+            };
+            
+            document.getElementById('turingInput').value = '';
+            renderTuringTape();
+            updateTuringState();
+            
+            document.getElementById('turingOutput').innerHTML = `
+                <h4>📊 Información de la Máquina:</h4>
+                <p>La máquina de Turing simulada reconoce cadenas binarias con igual número de 0s y 1s.</p>
+                <p><strong>Funcionamiento:</strong></p>
+                <ul>
+                    <li>Lee la cadena de izquierda a derecha</li>
+                    <li>Marca cada 0 encontrado y busca un 1 correspondiente</li>
+                    <li>Marca cada 1 encontrado y busca un 0 correspondiente</li>
+                    <li>Acepta si todos los símbolos pueden emparejarse</li>
+                </ul>
+            `;
+        }
+        
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            const codeInput = document.getElementById('codeInput');
+            
+            // Listeners para botones del compilador
+            document.getElementById('lexicoBtn').addEventListener('click', realizarAnalisisLexico);
+            document.getElementById('sintacticoBtn').addEventListener('click', realizarAnalisisSintactico);
+            document.getElementById('ejecutarBtn').addEventListener('click', ejecutarCodigo);
+            
+            // Listener para resaltar palabras desconocidas
+            codeInput.addEventListener('input', highlightUnknownWords);
+            codeInput.addEventListener('scroll', function() {
+                document.getElementById('highlightLayer').scrollTop = codeInput.scrollTop;
+            });
+            
+            // Inicializar máquina de Turing
+            resetTuring();
+            
+            // Listener para Enter en el input de Turing
+            document.getElementById('turingInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    initializeTuring();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
